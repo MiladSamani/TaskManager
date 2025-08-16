@@ -1,5 +1,5 @@
 import "dotenv/config";
-import DB from "./db.js";
+import DB from "./DB/db.js";
 
-console.log(DB.getTaskByTitle("learn docker"));
+console.log(DB.getTaskByID(3));
 

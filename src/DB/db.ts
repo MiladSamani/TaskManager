@@ -1,5 +1,6 @@
 import fs from "fs";
 import chalk from "chalk";
+import { Task } from "../types/task.js";
 
 const filename: string | undefined = process.env.DB_FILE;
 if (!filename) {
@@ -8,14 +9,6 @@ if (!filename) {
 
 const warning = chalk.yellowBright.bold;
 const success = chalk.greenBright.bold;
-
-// Define the structure of a task
-interface Task {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 
 export default class DB {
   /** Creates a new database file if it does not already exist */
