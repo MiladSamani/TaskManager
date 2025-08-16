@@ -216,4 +216,84 @@ export default class DB {
       throw new Error("Could not save the task to the database.");
     }
   }
+
+  /**
+   * Inserts multiple tasks into the database in bulk.
+   *
+   * Accepts either:
+   * - a JSON string representing an array of Task objects, or
+   * - a direct array of Task objects.
+   *
+   * The method will overwrite the entire DB file with the new data.
+   *
+   * @param data - JSON string or array of Task objects
+   * @throws {Error} - If data is invalid JSON or not an array
+   * @throws {Error} - If the file cannot be written
+   */
+  static insertBulkData(data: string | Array<Task>) {
+    // Case 1: If data is a string, try to parse it as JSON
+    if (typeof data === "string") {
+      try {
+        data = JSON.parse(data);
+      } catch (error) {
+        throw new Error("Invalid data: Could not parse JSON string.");
+      }
+    }
+
+    // Case 2: Validate that data is an array
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid data: Must be an array of Task objects.");
+    }
+
+    // Convert the array into a formatted JSON string
+    const json = JSON.stringify(data, null, 2);
+
+    // Write data to the DB file
+    try {
+      fs.writeFileSync(filename!, json, "utf-8");
+      console.log(success("Bulk data inserted successfully."));
+    } catch (error) {
+      throw new Error("Cannot write to DB file.");
+    }
+  }
+
+  /**
+   * Deletes a task from the database by its ID.
+   *
+   * @param id - Task ID (number or string, must be positive integer)
+   * @returns {boolean} - Returns true if deleted successfully, false if task not found
+   */
+  static deleteTaskByID(id: number | string): boolean {
+    id = Number(id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error("task id must be a positive integer");
+    }
+
+    let data: Task[];
+
+    try {
+      const raw = fs.readFileSync(filename!, "utf-8");
+      data = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(data)) {
+        throw new Error("DB file is not in expected format");
+      }
+    } catch (error) {
+      throw new Error("Cannot read DB file: " + (error as Error).message);
+    }
+
+    const initialLength = data.length;
+    data = data.filter((task) => task.id !== id);
+
+    if (data.length === initialLength) {
+      return false; // task with this id not found
+    }
+
+    try {
+      fs.writeFileSync(filename!, JSON.stringify(data, null, 4), "utf-8");
+      return true; // successfully deleted
+    } catch (error) {
+      throw new Error("Cannot write to DB file: " + (error as Error).message);
+    }
+  }
 }
