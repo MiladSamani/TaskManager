@@ -1,5 +1,4 @@
 import "dotenv/config";
 import DB from "./DB/db.js";
 
-console.log(DB.getTaskByID(3));
-
+console.log(DB.saveTask(0, "learn nest", true));
