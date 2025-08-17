@@ -146,75 +146,61 @@ export default class DB {
    * @param id - Task ID (0 = auto-generate)
    * @param title - Task title (min 3 characters)
    * @param completed - Completion status (default: false)
+   * @returns The ID of the saved task (auto-generated if new)
+   * @throws Error if validation fails, task not found, or save fails
    */
-  static saveTask(id = 0, title: string, completed = false) {
+  static saveTask(id = 0, title: string, completed = false): number {
     id = Number(id);
 
-    // Validate ID: must be a non-negative integer
+    // Validate ID
     if (id < 0 || !Number.isInteger(id)) {
       throw new Error(
         "id must be an integer and greater than or equal to zero."
       );
     }
 
-    // Validate title: must be a string with at least 3 characters
+    // Validate title
     if (typeof title !== "string" || title.length < 3) {
       throw new Error(
         "title must be a string and at least three characters long."
       );
     }
 
-    // Prevent duplicate titles (unless updating the same task)
-    const existingTask = DB.getTaskByTitle(title);
-    if (existingTask && existingTask.id !== id) {
-      throw new Error("A task already exists with this title.");
-    }
-
-    let data;
-
-    // Load existing data from file
+    let data: Task[] = [];
     if (DB.DBExists()) {
       const rawData = fs.readFileSync(filename!, "utf-8");
-      try {
-        data = JSON.parse(rawData);
-      } catch (error: any) {
-        throw new Error("Syntax error in DB file: " + error.message);
-      }
+      data = JSON.parse(rawData);
     } else {
-      // Create new DB if it doesn't exist
       DB.createDB();
-      data = [];
     }
 
-    // Case 1: Create a new task (auto-generate ID)
+    let finalId = id;
+
     if (id === 0) {
-      id = data.length > 0 ? data[data.length - 1].id + 1 : 1;
-      data.push({ id, title, completed });
-    }
-    // Case 2: Update an existing task
-    else {
-      let taskFound = false;
-      for (let i = 0; i < data.length; i++) {
-        if (data[i].id === id) {
-          data[i].title = title;
-          data[i].completed = completed;
-          taskFound = true;
-          break;
-        }
+      // Case 1: Creating a new task → assign a new auto-incremented ID
+      finalId = data.length > 0 ? data[data.length - 1].id + 1 : 1;
+
+      // Validate that no other task already has the same title
+      if (data.find((t) => t.title === title)) {
+        throw new Error("A task with this title already exists.");
       }
-      if (!taskFound) {
-        throw new Error("Task not found: No task with the given ID.");
-      }
+
+      data.push({ id: finalId, title, completed });
+    } else {
+      // Case 2: Updating an existing task
+      const existingTask = data.find((t) => t.id === id);
+      if (!existingTask) throw new Error("Task not found");
+
+      // Validate that no other task (different ID) has the same title
+      const duplicate = data.find((t) => t.title === title && t.id !== id);
+      if (duplicate) throw new Error("Another task already has this title.");
+
+      existingTask.title = title;
+      existingTask.completed = completed;
     }
 
-    // Save updated data back to file
-    const str = JSON.stringify(data, null, 2); // Pretty-print with 2 spaces
-    try {
-      fs.writeFileSync(filename!, str, "utf-8");
-      console.log(success(`Task "${title}" saved successfully.`));
-    } catch (error) {
-      throw new Error("Could not save the task to the database.");
-    }
+    fs.writeFileSync(filename!, JSON.stringify(data, null, 2), "utf-8");
+    return finalId;
   }
 
   /**
