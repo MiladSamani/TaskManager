@@ -1,7 +1,12 @@
 [
   {
     "id": 1,
-    "title": "learn css",
+    "title": "learn ionic",
     "completed": true
+  },
+  {
+    "id": 2,
+    "title": "learn react",
+    "completed": false
   }
 ]

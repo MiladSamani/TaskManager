@@ -1,3 +1,4 @@
+// src/DB/db.ts
 import fs from "fs";
 import chalk from "chalk";
 import { Task } from "../types/task.js";
@@ -119,23 +120,18 @@ export default class DB {
    *
    * @returns {Task[] | null} - Array of all tasks, or `null` if DB doesn't exist and can't be created
    */
-  static getAllTask(): Task[] | null {
-    if (!DB.DBExists()) {
-      try {
-        DB.createDB();
-        return null;
-      } catch (error: any) {
-        throw new Error(error.message);
-      }
-    }
-
-    try {
-      const data: Task[] = JSON.parse(fs.readFileSync(filename!, "utf-8"));
-      return data;
-    } catch (error: any) {
-      throw new Error("Syntax error in DB file. " + error.message);
-    }
+ static getAllTasks(): Task[] {
+  if (!DB.DBExists()) {
+    DB.createDB();
+    return [];
   }
+  try {
+    const data: Task[] = JSON.parse(fs.readFileSync(filename!, "utf-8"));
+    return Array.isArray(data) ? data : [];
+  } catch (error: any) {
+    throw new Error("Syntax error in DB file. " + error.message);
+  }
+}
 
   /**
    * Saves a new task or updates an existing one.
